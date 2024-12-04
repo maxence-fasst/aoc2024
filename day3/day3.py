@@ -1,50 +1,33 @@
 import re
+from operator import mul
 
-def mul(a, b):
-    return a * b
 
 class Solver:
+    REGEX_MUL = re.compile(r"(mul\(\d{1,3},\d{1,3}\))")
 
     def __init__(self, *args, **kwargs):
         with open('input.txt') as f:
             self.data = f.read()
 
-    def _evaluate(self, expression):
-        regex = re.compile(r"(mul\(\d{1,3},\d{1,3}\))")
-        return sum(eval(x) for x in regex.findall(expression))
-
     def solve_first_part(self):
-        return self._evaluate(self.data)
+        return sum(eval(x) for x in self.REGEX_MUL.findall(self.data))
     
     def solve_second_part(self):
-        slices_to_evaluate = []
+        do_indexes = [find.start() for find in re.finditer(r"(do\(\))", self.data)]
+        dont_indexes = [find.start() for find in re.finditer(r"(don't\(\))", self.data)]
+        mul_indexes = { find.start(): find.group() for find in self.REGEX_MUL.finditer(self.data) }
         todo = True
-        current_index = 0
-        do_indexes = re.finditer(r"(do\(\))", self.data)
-        dont_indexes = re.finditer(r"(don't\(\))", self.data)
-        while True:
-            if todo:
-                next_dont = next(dont_indexes, None)
-                if next_dont:
-                    if next_dont.start() < current_index:
-                        continue
-                    slices_to_evaluate.append(self.data[current_index:next_dont.start()])
-                    current_index = next_dont.end()
-                    todo = False
-                else:
-                    slices_to_evaluate.append(self.data[current_index:])
-                    break
-            else:
-                next_do = next(do_indexes, None)
-                if next_do:
-                    if next_do.start() < current_index:
-                        continue
-                    current_index = next_do.end()
-                    todo = True
-                else:
-                    break
-        return self._evaluate(''.join(slices_to_evaluate))
-
+        result = 0
+        for index in sorted([*do_indexes, *dont_indexes, *mul_indexes.keys()]):
+            if index in do_indexes:
+                todo = True
+            elif index in dont_indexes:
+                todo = False
+            elif index in mul_indexes.keys():
+                if todo:
+                    result += eval(mul_indexes[index])
+        return result
+        
 
 solver = Solver()
 print(f'Solution 1 = {solver.solve_first_part()}')
