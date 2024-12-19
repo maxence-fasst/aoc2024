@@ -1,4 +1,4 @@
-from collections import deque
+from functools import cache
 
 class Solver:
 
@@ -13,27 +13,22 @@ class Solver:
                     self.towels = line.replace(' ', '').split(',')
                 else:
                     self.designs.append(line)
-                    
-    def _get_nb_possible_result(self, design):
-        queue = deque([0])  
-        visited = set()
-        while queue:
-            current_index = queue.popleft()
-            if current_index == len(design):
-                return True
-            if current_index in visited:
-                continue
-            visited.add(current_index)
-            for towel in self.towels:
-                if design.startswith(towel, current_index):
-                    queue.append(current_index + len(towel))
-        return False
+
+    @cache       
+    def _get_nb_possible_result(self, design, start=0):
+        if start == len(design):
+            return 1
+        result = 0
+        for towel in self.towels:
+            if design.startswith(towel, start):
+                result += self._get_nb_possible_result(design, start=start + len(towel))
+        return result
 
     def solve_first_part(self):
         return sum([self._get_nb_possible_result(design) > 0 for design in self.designs])
         
     def solve_second_part(self):
-        pass
+        return sum([self._get_nb_possible_result(design) for design in self.designs])
 
 solver = Solver()
 print(f'Solution 1 = {solver.solve_first_part()}')
